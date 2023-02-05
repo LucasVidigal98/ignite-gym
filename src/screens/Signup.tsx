@@ -1,4 +1,4 @@
-import { Center, Heading, Image, ScrollView, Text, VStack } from "native-base";
+import { Center, Heading, Image, ScrollView, Text, VStack, useToast } from "native-base";
 
 import LogoSvg from '@assets/logo.svg';
 import BackgroundImg from '@assets/background.png';
@@ -8,12 +8,17 @@ import { useNavigation } from "@react-navigation/native";
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { api } from '@services/api';
+import axios from "axios";
+import { AppError } from "@utils/AppError";
+import { useState } from "react";
+import { useAuth } from "@hooks/useAuth";
 
 type FormDataProps = {
   name: string;
   email: string;
   password: string;
-  password_confirm: string;
+  password_confirm?: string;
 }
 
 const signUpSchema = yup.object({
@@ -24,6 +29,12 @@ const signUpSchema = yup.object({
 })
 
 export function SignUp() {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const { signIn } = useAuth();
+
+  const toast = useToast();
+
   const { control, handleSubmit, formState: { errors } } = useForm<FormDataProps>({
     resolver: yupResolver(signUpSchema)
   });
@@ -34,8 +45,23 @@ export function SignUp() {
     navigation.goBack();
   }
 
-  function handleSignUp({ name, email, password, password_confirm }: FormDataProps) {
-    console.log({ name, email, password, password_confirm });
+  async function handleSignUp({ name, email, password }: FormDataProps) {
+    try {
+      setIsLoading(true);
+      await api.post('/users', { name, email, password });
+      await signIn(email, password);
+    } catch (error) {
+      const isAppError = error instanceof AppError;
+      const message = isAppError ? error.message : 'Não foi possível criar a conta. Tente novamente mais tarde.'
+
+      setIsLoading(false);
+
+      return toast.show({
+        title: message,
+        placement: 'top',
+        bgColor: 'red.500'
+      });
+    }
   }
 
   return (
@@ -119,7 +145,7 @@ export function SignUp() {
             )}
           />
 
-          <Button title="Criar e acessar" onPress={handleSubmit(handleSignUp)} />
+          <Button title="Criar e acessar" onPress={handleSubmit(handleSignUp)} isLoading={isLoading} />
         </Center>
 
         <Button title="Voltar para o login" variant="outline" mt={12} onPress={handleGoBack} />
