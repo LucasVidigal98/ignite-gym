@@ -3,7 +3,7 @@ import { Input } from "@components/Input";
 import { ScreenHeader } from "@components/ScreenHeader";
 import { UserPhoto } from "@components/UserPhoto";
 import { Center, Heading, ScrollView, Skeleton, Text, VStack, useToast } from "native-base";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, TouchableOpacity } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
@@ -13,6 +13,9 @@ import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { api } from "@services/api";
 import { AppError } from "@utils/AppError";
+
+import DefaultUserPhotoImg from '@assets/userPhotoDefault.png';
+
 
 const PHOTO_SIZE = 33;
 
@@ -51,7 +54,7 @@ const profileSchema = yup.object({
 export function Profile() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [photoIsLoading, setPhotoIsLoading] = useState(false);
-  const [userPhoto, setUserPhoto] = useState('https://github.com/LucasVidigal98.png');
+  const [userPhoto, setUserPhoto] = useState('');
 
   const toast = useToast();
   const { user, updateUserProfile } = useAuth();
@@ -91,14 +94,49 @@ export function Profile() {
           });
         }
 
-        setUserPhoto(photoUri);
+        const fileExtension = photoUri.split('.').pop();
+
+        const photoFile = {
+          name: `${user.name}.${fileExtension}`.toLowerCase(),
+          uri: photoUri,
+          type: `${photoSelected.assets[0].type}/${fileExtension}`
+        } as any;
+
+        const userPhotoUploadForm = new FormData();
+        userPhotoUploadForm.append('avatar', photoFile);
+
+        const response = await api.patch('/users/avatar', userPhotoUploadForm, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        await updateUserProfile({ ...user, avatar: response.data.avatar });
+        setUserPhoto(response.data.avatar);
+
+        toast.show({
+          title: 'Foto atualizada com sucesso!',
+          placement: 'top',
+          bgColor: 'green.500'
+        });
       }
     } catch (error) {
-      console.log(error);
+      const isAppError = error instanceof AppError;
+      const title = isAppError ? error.message : 'Não foi atualizar o avatar.'
+
+      toast.show({
+        title,
+        placement: 'top',
+        bgColor: 'red.500'
+      });
     } finally {
       setPhotoIsLoading(false);
     }
   }
+
+  useEffect(() => {
+    setUserPhoto(user.avatar);
+  }, []);
 
   async function handleProfileUpdate(data: FormDataProps) {
     try {
@@ -141,7 +179,7 @@ export function Profile() {
               endColor="gray.400"
             /> :
             <UserPhoto
-              source={{ uri: userPhoto }}
+              source={user.avatar ? { uri: `${api.defaults.baseURL}/avatar/${user.avatar}` } : DefaultUserPhotoImg}
               size={PHOTO_SIZE}
               alt="Foto do usuário"
             />
