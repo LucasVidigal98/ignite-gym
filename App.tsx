@@ -7,6 +7,11 @@ import { THEME } from './src/theme';
 import { Routes } from '@routes/index';
 import { AuthContextProvider } from '@contexts/AuthContext';
 import { useAuth } from '@hooks/useAuth';
+import OneSignal from 'react-native-onesignal';
+import { keyId } from './oneSignal';
+
+OneSignal.setAppId(keyId);
+
 
 export default function App() {
   const [fontsLoaded] = useFonts({ Roboto_400Regular, Roboto_700Bold });

@@ -5,6 +5,24 @@ import { AppRoutes } from "./app.routes";
 import { useAuth } from "@hooks/useAuth";
 import { Loading } from "@components/Loading";
 
+const linking = {
+  prefixes: [
+    'ignite-gym://'
+  ],
+  config: {
+    screens: {
+      exercise: {
+        path: 'exercise/:exerciseId',
+        parse: {
+          exerciseId: (exerciseId: string) => exerciseId
+        }
+      },
+      home: 'home/',
+      NotFound: 'notFound/'
+    }
+  }
+}
+
 export function Routes() {
 
   const theme = DefaultTheme;
@@ -18,10 +36,9 @@ export function Routes() {
     return <Loading />
   }
 
-
   return (
     <Box flex={1} bg="gray.700">
-      <NavigationContainer theme={theme}>
+      <NavigationContainer theme={theme} linking={linking}>
         {user.id ? <AppRoutes /> : <AuthRoutes />}
       </NavigationContainer>
     </Box>

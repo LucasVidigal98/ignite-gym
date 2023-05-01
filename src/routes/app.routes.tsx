@@ -19,6 +19,7 @@ type AppRoutes = {
   exercise: {
     exerciseId: string;
   };
+  notFound: undefined;
 }
 
 export type AppNavigatorRouteProps = BottomTabNavigationProp<AppRoutes>;
@@ -76,6 +77,12 @@ export function AppRoutes() {
       <Screen
         name="exercise"
         component={Exercise}
+        options={{ tabBarButton: () => null }}
+      />
+
+      <Screen
+        name="notFound"
+        component={Profile}
         options={{ tabBarButton: () => null }}
       />
     </Navigator>
